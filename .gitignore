@@ -1,0 +1,15 @@
+# Secrets
+.env
+
+# Generated database
+test.db
+
+# Scraped output
+scraped_content/
+
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc

@@ -1,0 +1,21 @@
+{
+    "mcpServers": {        
+        "llm_inference": {
+            "command": "uv",
+            "args": ["run", "starter_server.py"],
+            "env": { "PYTHONUNBUFFERED": "1" }
+        },
+        "sqlite": {
+            "command": "uv",
+            "args": ["run", "python", "-c", "import sys; from mcp_server_sqlite import main; sys.exit(main())", "--db-path", "./test.db"]
+        },
+        "filesystem": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "."
+            ]
+        }
+    }
+}
