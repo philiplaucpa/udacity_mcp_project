@@ -351,6 +351,9 @@ class ChatSession:
         full_response = ""
         source_url = None
         used_web_search = False
+        tools_used: list[tuple[str, dict, bool]] = []  # (name, args, is_error)
+
+        print(f"\n>>> Processing query: {query}")
 
         process_query = True
         while process_query:
@@ -370,7 +373,8 @@ class ChatSession:
                     tool_id = content.id
                     tool_args = content.input
                     tool_name = content.name
-                    print(f"Calling tool {tool_name} with args {tool_args}")
+                    print(f"\n[TOOL CALL] {tool_name} (server: {self.tool_to_server.get(tool_name, '?')})")
+                    print(f"            args: {json.dumps(tool_args)}")
 
                     # 3. Find the server that has this tool
                     server_name = self.tool_to_server.get(tool_name)
@@ -398,6 +402,9 @@ class ChatSession:
                     if not source_url:
                         source_url = self._extract_url_from_result(result_text)
 
+                    tools_used.append((tool_name, tool_args, is_error))
+                    print(f"            status: {'ERROR' if is_error else 'OK'}")
+
                     # 5. Collect the tool result
                     tool_results.append({
                         "type": "tool_result",
@@ -422,8 +429,23 @@ class ChatSession:
                 # 7. No tool calls means Claude is done
                 process_query = False
 
+        self._print_tools_summary(query, tools_used)
+
         if self.data_extractor and full_response.strip():
             await self.data_extractor.extract_and_store_data(query, full_response.strip(), source_url)
+
+    @staticmethod
+    def _print_tools_summary(query: str, tools_used: list[tuple[str, dict, bool]]) -> None:
+        """Print a clear summary of every tool executed for this query."""
+        print("\n" + "=" * 60)
+        print(f"TOOLS EXECUTED FOR QUERY: {query}")
+        print("-" * 60)
+        if not tools_used:
+            print("  (no tools were called - answered from model knowledge/context)")
+        for i, (name, args, is_error) in enumerate(tools_used, 1):
+            status = "ERROR" if is_error else "OK"
+            print(f"  {i}. {name} [{status}]  args={json.dumps(args)}")
+        print("=" * 60)
 
     def _extract_url_from_result(self, result_text: str) -> str | None:
         """Extract URL from tool result."""
